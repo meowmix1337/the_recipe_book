@@ -25,6 +25,10 @@ cover:
 	go test $(TEST_DIR) -coverprofile=c.out
 	go tool cover -html="c.out"
 
+lint:
+	@echo "Running linter"
+	golangci-lint run
+
 # Clean test cache
 clean:
 	@echo "Cleaning test cache..."
