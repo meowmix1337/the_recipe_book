@@ -16,9 +16,10 @@ func newRouter() *echo.Echo {
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
 			log.Info().
 				Str("uri", v.URI).
-				Str("method", v.Method).
+				Str("method", c.Request().Method).
 				Str("remote_ip", v.RemoteIP).
 				Str("real_ip", c.RealIP()).
+				Str("request_id", v.RequestID).
 				Time("start_time", v.StartTime).
 				Int("status", v.Status).
 				Msg("request")
@@ -27,19 +28,6 @@ func newRouter() *echo.Echo {
 		},
 	}))
 	e.Use(middleware.Recover())
-
-	// Public routes
-	// e.POST("/signup", userController.Signup)
-	// e.POST("/login", userController.Login)
-
-	// // Private routes
-	// api := e.Group("/api")
-	// api.Use(middleware.JWTAuth())
-	// api.GET("/protected", userController.Protected)
-
-	// // Recipe routes
-	// api.POST("/recipes", recipeController.CreateRecipe)
-	// api.GET("/recipes/:id", recipeController.GetRecipe)
 
 	return e
 }
