@@ -12,6 +12,7 @@ type Config struct {
 	Environment string `mapstructure:"ENVIRONMENT"`
 	Hostname    string `mapstructure:"HOSTNAME"`
 	Port        string `mapstructure:"PORT"`
+	LogLevel    string `mapstructure:"LOG_LEVEL"`
 }
 
 // NewConfig initializes and returns a Config instance.
@@ -24,6 +25,7 @@ func NewConfig() (*Config, error) {
 	viper.SetDefault("ENVIRONMENT", "development")
 	viper.SetDefault("HOSTNAME", "localhost")
 	viper.SetDefault("PORT", "8081")
+	viper.SetDefault("LOG_LEVEL", "debug")
 
 	err := viper.ReadInConfig() // Read from config file.
 	if err != nil {
