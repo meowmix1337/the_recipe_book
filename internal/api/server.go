@@ -12,6 +12,7 @@ import (
 
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller"
+	"github.com/meowmix1337/the_recipe_book/internal/repo"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
 	"github.com/rs/zerolog/log"
 )
@@ -39,10 +40,10 @@ func Start(cfg *config.Config) {
 		// api.GET("/recipes/:id", recipeController.GetRecipe)
 
 		// Initialize repositories
-		//  userRepo := repository.NewUserRepository(db)
+		userRepo := repo.NewUserRepository()
 
 		// Initialize services
-		userService := service.NewUserService()
+		userService := service.NewUserService(userRepo)
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)

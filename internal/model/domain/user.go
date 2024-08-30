@@ -7,5 +7,6 @@ type UserSignup struct {
 
 type User struct {
 	ID    uint
+	UUID  string
 	Email string
 }
