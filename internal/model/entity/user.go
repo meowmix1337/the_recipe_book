@@ -11,8 +11,9 @@ type User struct {
 
 func (u *User) ToDomain() *domain.User {
 	return &domain.User{
-		ID:    u.ID,
-		UUID:  u.UUID,
-		Email: u.Email,
+		ID:       u.ID,
+		UUID:     u.UUID,
+		Email:    u.Email,
+		Password: u.Password,
 	}
 }

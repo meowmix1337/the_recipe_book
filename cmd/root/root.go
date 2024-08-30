@@ -20,7 +20,6 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		// TODO: start server here.
 		log.Info().Interface("options", cfg).Msg("Server started")
 		api.Start(cfg)
 	},
@@ -34,12 +33,14 @@ func init() {
 	rootCmd.PersistentFlags().String("hostname", "", "Hostname of the application")
 	rootCmd.PersistentFlags().String("port", "", "Port for the application")
 	rootCmd.PersistentFlags().String("loglevel", "", "log level for the application")
+	rootCmd.PersistentFlags().String("jwtSecret", "", "a secret for JWT token generation")
 
 	// Bind the flags to Viper.
 	viper.BindPFlag("ENVIRONMENT", rootCmd.PersistentFlags().Lookup("environment")) //nolint:errcheck // viper
 	viper.BindPFlag("HOSTNAME", rootCmd.PersistentFlags().Lookup("hostname"))       //nolint:errcheck // viper
 	viper.BindPFlag("PORT", rootCmd.PersistentFlags().Lookup("port"))               //nolint:errcheck // viper
 	viper.BindPFlag("LOG_LEVEL", rootCmd.PersistentFlags().Lookup("loglevel"))      //nolint:errcheck // viper
+	viper.BindPFlag("JWT_SECRET", rootCmd.PersistentFlags().Lookup("jwtSecret"))    //nolint:errcheck // viper
 }
 
 func Execute() {

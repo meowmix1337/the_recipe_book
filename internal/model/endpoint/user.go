@@ -18,3 +18,15 @@ type UserSignupError struct {
 	Message string      `json:"message"`
 	Errors  interface{} `json:"errors"`
 }
+
+type UserCredentialsRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+func (u *UserCredentialsRequest) ToDomain() *domain.UserCredentials {
+	return &domain.UserCredentials{
+		Email:    u.Email,
+		Password: u.Password,
+	}
+}

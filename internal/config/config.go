@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -13,6 +14,7 @@ type Config struct {
 	Hostname    string `mapstructure:"HOSTNAME"`
 	Port        string `mapstructure:"PORT"`
 	LogLevel    string `mapstructure:"LOG_LEVEL"`
+	JWTSecret   string `mapstructure:"JWT_SECRET"`
 }
 
 // NewConfig initializes and returns a Config instance.
@@ -26,6 +28,8 @@ func NewConfig() (*Config, error) {
 	viper.SetDefault("HOSTNAME", "localhost")
 	viper.SetDefault("PORT", "8081")
 	viper.SetDefault("LOG_LEVEL", "debug")
+	// You should definitely replace with your own secret, this is for testing only
+	viper.SetDefault("JWT_SECRET", "ZY7FM2SuRM13eRYX")
 
 	err := viper.ReadInConfig() // Read from config file.
 	if err != nil {
@@ -39,4 +43,8 @@ func NewConfig() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func (c *Config) IsDevelopment() bool {
+	return strings.ToLower(c.Environment) == "development"
 }

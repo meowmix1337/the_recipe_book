@@ -44,6 +44,7 @@ func Start(cfg *config.Config) {
 
 		// Initialize services
 		userService := service.NewUserService(userRepo)
+		userService.Config = cfg
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)

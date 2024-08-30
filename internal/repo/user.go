@@ -2,6 +2,7 @@ package repo
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/binary"
 
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
@@ -10,6 +11,7 @@ import (
 
 type UserRepo interface {
 	Create(email, password string) (*domain.User, error)
+	ByEmail(email string) (*domain.User, error)
 }
 
 type userRepo struct {
@@ -41,4 +43,16 @@ func (u *userRepo) Create(email, password string) (*domain.User, error) {
 	u.users[uint(id)] = newUser
 
 	return newUser.ToDomain(), nil
+}
+
+func (u *userRepo) ByEmail(email string) (*domain.User, error) {
+	for _, user := range u.users {
+		if user.Email != email {
+			continue
+		}
+
+		return user.ToDomain(), nil
+	}
+
+	return nil, sql.ErrNoRows
 }
