@@ -1,8 +1,10 @@
 package api
 
 import (
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/rs/zerolog/log"
 )
 
@@ -28,6 +30,8 @@ func newRouter() *echo.Echo {
 		},
 	}))
 	e.Use(middleware.Recover())
+
+	e.Validator = &validation.CustomValidator{Validator: validator.New()}
 
 	return e
 }

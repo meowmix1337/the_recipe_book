@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
 )
@@ -26,6 +27,23 @@ func (uc *UserController) signup(c echo.Context) error {
 	var req endpoint.UserSignupRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid input"})
+	}
+
+	validationErrors := make(map[string]interface{})
+	if err := c.Validate(&req); err != nil {
+		validationErrors = validation.FormatValidationError(err)
+	}
+
+	passwordErrors := validation.ValidatePassword(req.Password)
+	if len(passwordErrors) > 0 {
+		validationErrors["password"] = passwordErrors
+	}
+
+	if len(validationErrors) > 0 {
+		return c.JSON(http.StatusBadRequest, &endpoint.UserSignupError{
+			Message: "Validation errors",
+			Errors:  validationErrors,
+		})
 	}
 
 	err := uc.UserService.SignUp(req.ToDomain())
