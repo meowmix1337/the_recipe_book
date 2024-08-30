@@ -22,16 +22,17 @@ type UserService interface {
 }
 
 type userService struct {
-	*config.Config
+	*BaseService
 
 	users    map[uint]*domain.User
 	userRepo repo.UserRepo
 }
 
-func NewUserService(userRepo repo.UserRepo) *userService {
+func NewUserService(cfg config.Config, userRepo repo.UserRepo) *userService {
 	return &userService{
-		users:    make(map[uint]*domain.User),
-		userRepo: userRepo,
+		BaseService: &BaseService{Config: cfg},
+		users:       make(map[uint]*domain.User),
+		userRepo:    userRepo,
 	}
 }
 
@@ -93,7 +94,7 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 		"exp":     time.Now().Add(domain.JWTExpiration).Unix(),
 	})
 
-	tokenString, err := token.SignedString([]byte(u.JWTSecret))
+	tokenString, err := token.SignedString([]byte(u.Config.GetJWTSecret()))
 	if err != nil {
 		log.Err(err).Msg("error generating JWT token")
 		return "", domain.ErrJWTGeneration

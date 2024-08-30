@@ -19,7 +19,7 @@ import (
 
 const shutdownTime = time.Second * 5
 
-func Start(cfg *config.Config) {
+func Start(cfg config.Config) {
 	echoRouter := newRouter()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -43,15 +43,14 @@ func Start(cfg *config.Config) {
 		userRepo := repo.NewUserRepository()
 
 		// Initialize services
-		userService := service.NewUserService(userRepo)
-		userService.Config = cfg
+		userService := service.NewUserService(cfg, userRepo)
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)
 		userController.AddRoutes(echoRouter)
 
-		log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.Port, cfg.Environment))
-		if err := echoRouter.Start(fmt.Sprintf(":%v", cfg.Port)); err != nil && errors.Is(err, http.ErrServerClosed) {
+		log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.GetPort(), cfg.GetEnvironment()))
+		if err := echoRouter.Start(fmt.Sprintf(":%v", cfg.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {
 			// TODO do things before shutdown
 			echoRouter.Logger.Fatal("shutting down the server")
 		}

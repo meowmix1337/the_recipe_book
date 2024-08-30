@@ -2,14 +2,19 @@ package config
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
+type Config interface {
+	GetEnvironment() string
+	GetJWTSecret() string
+	GetPort() string
+}
+
 // Config holds the application configuration.
-type Config struct {
+type ConfigImpl struct {
 	Environment string `mapstructure:"ENVIRONMENT"`
 	Hostname    string `mapstructure:"HOSTNAME"`
 	Port        string `mapstructure:"PORT"`
@@ -17,8 +22,10 @@ type Config struct {
 	JWTSecret   string `mapstructure:"JWT_SECRET"`
 }
 
+var _ Config = (*ConfigImpl)(nil)
+
 // NewConfig initializes and returns a Config instance.
-func NewConfig() (*Config, error) {
+func NewConfig() (*ConfigImpl, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.SetConfigType("env") // Use .env files for environment configuration.
@@ -36,7 +43,7 @@ func NewConfig() (*Config, error) {
 		log.Warn().Msg(fmt.Sprintf("Error reading config file: %v. Using defaults and environment variables.", err))
 	}
 
-	var config Config
+	var config ConfigImpl
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		return nil, err
@@ -45,6 +52,14 @@ func NewConfig() (*Config, error) {
 	return &config, nil
 }
 
-func (c *Config) IsDevelopment() bool {
-	return strings.ToLower(c.Environment) == "development"
+func (c *ConfigImpl) GetEnvironment() string {
+	return c.Environment
+}
+
+func (c *ConfigImpl) GetJWTSecret() string {
+	return c.JWTSecret
+}
+
+func (c *ConfigImpl) GetPort() string {
+	return c.Port
 }
