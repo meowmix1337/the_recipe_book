@@ -1,39 +1,64 @@
 package api
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller"
+	"github.com/meowmix1337/the_recipe_book/internal/service"
 	"github.com/rs/zerolog/log"
 )
 
+const shutdownTime = time.Second * 5
+
 func Start(cfg *config.Config) {
-	log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.Port, cfg.Environment))
 	echoRouter := newRouter()
 
-	// Public routes
-	// e.POST("/signup", userController.Signup)
-	// e.POST("/login", userController.Login)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	// Start server
+	go func() {
+		// Public routes
+		// e.POST("/signup", userController.Signup)
+		// e.POST("/login", userController.Login)
 
-	// // Private routes
-	// api := e.Group("/api")
-	// api.Use(middleware.JWTAuth())
-	// api.GET("/protected", userController.Protected)
+		// // Private routes
+		// api := e.Group("/api")
+		// api.Use(middleware.JWTAuth())
+		// api.GET("/protected", userController.Protected)
 
-	// // Recipe routes
-	// api.POST("/recipes", recipeController.CreateRecipe)
-	// api.GET("/recipes/:id", recipeController.GetRecipe)
+		// // Recipe routes
+		// api.POST("/recipes", recipeController.CreateRecipe)
+		// api.GET("/recipes/:id", recipeController.GetRecipe)
 
-	// Initialize repositories
-	//  userRepo := repository.NewUserRepository(db)
+		// Initialize repositories
+		//  userRepo := repository.NewUserRepository(db)
 
-	// Initialize services
-	//  userService := service.NewUserService(userRepo, []byte(cfg.JWTSecret))
+		// Initialize services
+		userService := service.NewUserService()
 
-	// Initialize controllers
-	userController := controller.NewUserController()
-	userController.AddRoutes(echoRouter)
+		// Initialize controllers
+		userController := controller.NewUserController(userService)
+		userController.AddRoutes(echoRouter)
 
-	echoRouter.Logger.Fatal(echoRouter.Start(fmt.Sprintf(":%v", cfg.Port)))
+		log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.Port, cfg.Environment))
+		if err := echoRouter.Start(fmt.Sprintf(":%v", cfg.Port)); err != nil && errors.Is(err, http.ErrServerClosed) {
+			// TODO do things before shutdown
+			echoRouter.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTime)
+	defer cancel()
+	if err := echoRouter.Shutdown(ctx); err != nil {
+		echoRouter.Logger.Fatal(err)
+	}
 }
