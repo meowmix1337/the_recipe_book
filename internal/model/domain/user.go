@@ -3,6 +3,8 @@ package domain
 import (
 	"errors"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -16,6 +18,13 @@ var (
 const (
 	JWTExpiration = time.Hour * 72
 )
+
+type JWTCustomClaims struct {
+	Email string `json:"email"`
+	UUID  string `json:"uuid"`
+	Admin bool   `json:"admin"`
+	jwt.RegisteredClaims
+}
 
 type UserSignup struct {
 	Email    string

@@ -29,7 +29,9 @@ func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 func (uc *UserController) signup(c echo.Context) error {
 	var req endpoint.UserSignupRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid input"})
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "Invalid input",
+		})
 	}
 
 	validationErrors := make(map[string]interface{})
@@ -51,16 +53,16 @@ func (uc *UserController) signup(c echo.Context) error {
 
 	err := uc.UserService.SignUp(req.ToDomain())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, map[string]string{"message": "User created successfully"})
+	return c.JSON(http.StatusCreated, echo.Map{"message": "User created successfully"})
 }
 
 func (uc *UserController) login(c echo.Context) error {
 	var req endpoint.UserCredentialsRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"message": "Invalid input"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"message": "Invalid input"})
 	}
 
 	if err := c.Validate(&req); err != nil {
@@ -75,9 +77,9 @@ func (uc *UserController) login(c echo.Context) error {
 	if err != nil {
 		// we want to mask the actual error to the user
 		if uc.isUnauthorizedErr(err) {
-			return c.JSON(http.StatusUnauthorized, map[string]string{"message": "Unauthorized"})
+			return c.JSON(http.StatusUnauthorized, echo.Map{"message": "Unauthorized"})
 		}
-		return c.JSON(http.StatusInternalServerError, map[string]string{"message": "Internal Server Error"})
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
 
 	// return JWT token to be stored in client's local storage

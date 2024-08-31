@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
@@ -88,11 +88,18 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 		return "", err
 	}
 
+	//nolint:govet // viper
+	claims := &domain.JWTCustomClaims{
+		user.Email,
+		user.UUID,
+		false,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.JWTExpiration)),
+		},
+	}
+
 	// Generate JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"user_id": user.UUID,
-		"exp":     time.Now().Add(domain.JWTExpiration).Unix(),
-	})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	tokenString, err := token.SignedString([]byte(u.Config.GetJWTSecret()))
 	if err != nil {
