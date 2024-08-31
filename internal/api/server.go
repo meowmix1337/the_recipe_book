@@ -30,8 +30,8 @@ func Start(cfg config.Config) {
 		// e.POST("/signup", userController.Signup)
 		// e.POST("/login", userController.Login)
 
-		// // Private routes
-		// api := e.Group("/api")
+		// Private routes
+		// api := echoRouter.Group("/api")
 		// api.Use(middleware.JWTAuth())
 		// api.GET("/protected", userController.Protected)
 
@@ -47,7 +47,8 @@ func Start(cfg config.Config) {
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)
-		userController.AddRoutes(echoRouter)
+		userController.AddUnprotectedRoutes(echoRouter)
+		// userController.AddRoutes(api)
 
 		log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.GetPort(), cfg.GetEnvironment()))
 		if err := echoRouter.Start(fmt.Sprintf(":%v", cfg.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {

@@ -21,7 +21,7 @@ func NewUserController(userService service.UserService) *UserController {
 	}
 }
 
-func (uc *UserController) AddRoutes(e *echo.Echo) {
+func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 	e.POST("/signup", uc.signup)
 	e.POST("/login", uc.login)
 }
