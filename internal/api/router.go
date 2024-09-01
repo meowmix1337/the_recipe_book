@@ -1,10 +1,11 @@
 package api
 
 import (
+	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
+
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/rs/zerolog/log"
 )
 

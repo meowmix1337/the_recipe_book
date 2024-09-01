@@ -4,11 +4,12 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
 	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
+
+	"github.com/labstack/echo/v4"
 )
 
 type UserController struct {

@@ -3,6 +3,7 @@ package root
 import (
 	"github.com/meowmix1337/the_recipe_book/internal/api"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
