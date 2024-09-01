@@ -22,7 +22,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		log.Info().Interface("options", cfg).Msg("Server started")
-		api.Start(cfg)
+
+		server := api.NewServer(cfg)
+		server.Start()
 	},
 }
 

@@ -20,9 +20,10 @@ const (
 )
 
 type JWTCustomClaims struct {
-	Email string `json:"email"`
-	UUID  string `json:"uuid"`
-	Admin bool   `json:"admin"`
+	UserID uint   `json:"user_id"`
+	Email  string `json:"email"`
+	UUID   string `json:"uuid"`
+	Admin  bool   `json:"admin"`
 	jwt.RegisteredClaims
 }
 

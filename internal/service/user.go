@@ -91,6 +91,7 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 
 	//nolint:govet // viper
 	claims := &domain.JWTCustomClaims{
+		user.ID,
 		user.Email,
 		user.UUID,
 		false,

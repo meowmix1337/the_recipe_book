@@ -12,29 +12,38 @@ import (
 
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller"
+	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
+
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
 
 	"github.com/rs/zerolog/log"
 )
 
 const shutdownTime = time.Second * 5
 
-func Start(cfg config.Config) {
+type Server struct {
+	config.Config
+}
+
+func NewServer(cfg config.Config) *Server {
+	return &Server{
+		Config: cfg,
+	}
+}
+
+func (s *Server) Start() {
 	echoRouter := newRouter()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	// Start server
 	go func() {
-		// Public routes
-		// e.POST("/signup", userController.Signup)
-		// e.POST("/login", userController.Login)
-
-		// Private routes
-		// api := echoRouter.Group("/api")
-		// api.Use(middleware.JWTAuth())
-		// api.GET("/protected", userController.Protected)
+		// api := s.setUpAPI(echoRouter)
+		// api.Use(echojwt.JWT([]byte(cfg.GetJWTSecret())))
 
 		// // Recipe routes
 		// api.POST("/recipes", recipeController.CreateRecipe)
@@ -44,15 +53,16 @@ func Start(cfg config.Config) {
 		userRepo := repo.NewUserRepository()
 
 		// Initialize services
-		userService := service.NewUserService(cfg, userRepo)
+		userService := service.NewUserService(s.Config, userRepo)
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)
 		userController.AddUnprotectedRoutes(echoRouter)
 		// userController.AddRoutes(api)
 
-		log.Info().Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", cfg.GetPort(), cfg.GetEnvironment()))
-		if err := echoRouter.Start(fmt.Sprintf(":%v", cfg.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {
+		log.Info().
+			Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", s.Config.GetPort(), s.Config.GetEnvironment()))
+		if err := echoRouter.Start(fmt.Sprintf(":%v", s.Config.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {
 			// TODO do things before shutdown
 			echoRouter.Logger.Fatal("shutting down the server")
 		}
@@ -64,4 +74,18 @@ func Start(cfg config.Config) {
 	if err := echoRouter.Shutdown(ctx); err != nil {
 		echoRouter.Logger.Fatal(err)
 	}
+}
+
+func (s *Server) setUpAPI(e *echo.Echo) *echo.Group {
+	config := echojwt.Config{
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(domain.JWTCustomClaims)
+		},
+		SigningKey: []byte(s.Config.GetJWTSecret()),
+	}
+
+	api := e.Group("/api")
+	api.Use(echojwt.WithConfig(config))
+
+	return api
 }
