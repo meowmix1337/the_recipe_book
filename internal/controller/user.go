@@ -4,27 +4,33 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/meowmix1337/the_recipe_book/internal/api/middleware"
+	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
+	"github.com/rs/zerolog/log"
 
 	"github.com/labstack/echo/v4"
 )
 
 type UserController struct {
+	*BaseController
 	UserService service.UserService
 }
 
-func NewUserController(userService service.UserService) *UserController {
+func NewUserController(cfg config.Config, userService service.UserService) *UserController {
 	return &UserController{
-		UserService: userService,
+		BaseController: &BaseController{Config: cfg},
+		UserService:    userService,
 	}
 }
 
 func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 	e.POST("/signup", uc.signup)
 	e.POST("/login", uc.login)
+	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret()))
 }
 
 func (uc *UserController) signup(c echo.Context) error {
@@ -86,6 +92,23 @@ func (uc *UserController) login(c echo.Context) error {
 	// return JWT token to be stored in client's local storage
 	return c.JSON(http.StatusOK, &endpoint.JWTResponse{
 		Token: token,
+	})
+}
+
+func (uc *UserController) logout(c echo.Context) error {
+	claims, ok := c.Get("claims").(*domain.JWTCustomClaims)
+	if !ok {
+		log.Error().Msg("Failed to assert claims")
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
+	}
+
+	err := uc.UserService.Logout(claims.UserID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
+	}
+
+	return c.JSON(http.StatusOK, echo.Map{
+		"message": "Successfully logged out",
 	})
 }
 

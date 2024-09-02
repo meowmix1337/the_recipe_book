@@ -18,6 +18,7 @@ import (
 type UserService interface {
 	SignUp(userSignup *domain.UserSignup) error
 	Login(userCredentials *domain.UserCredentials) (string, error)
+	Logout(userID uint) error
 
 	ByEmail(email string) (*domain.User, error)
 }
@@ -113,6 +114,14 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 	}
 
 	return tokenString, nil
+}
+
+func (u *userService) Logout(userID uint) error {
+	// TODO blacklist the token via redis
+
+	// TODO revoke refresh token
+
+	return nil
 }
 
 func (u *userService) ByEmail(email string) (*domain.User, error) {

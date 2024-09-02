@@ -50,10 +50,10 @@ func (s *Server) Start() {
 		recipeService := service.NewRecipeService(s.Config)
 
 		// Initialize controllers
-		userController := controller.NewUserController(userService)
+		userController := controller.NewUserController(s.Config, userService)
 		userController.AddUnprotectedRoutes(echoRouter)
 
-		recipeController := controller.NewRecipeController(recipeService)
+		recipeController := controller.NewRecipeController(s.Config, recipeService)
 		recipeController.AddRoutes(api)
 
 		log.Info().
