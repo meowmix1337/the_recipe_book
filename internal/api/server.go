@@ -10,14 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/meowmix1337/the_recipe_book/internal/api/middleware"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller"
-	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
 
-	"github.com/golang-jwt/jwt/v5"
-	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 
 	"github.com/rs/zerolog/log"
@@ -42,23 +40,21 @@ func (s *Server) Start() {
 	defer stop()
 	// Start server
 	go func() {
-		// api := s.setUpAPI(echoRouter)
-		// api.Use(echojwt.JWT([]byte(cfg.GetJWTSecret())))
-
-		// // Recipe routes
-		// api.POST("/recipes", recipeController.CreateRecipe)
-		// api.GET("/recipes/:id", recipeController.GetRecipe)
+		api := s.setUpAPI(echoRouter)
 
 		// Initialize repositories
 		userRepo := repo.NewUserRepository()
 
 		// Initialize services
 		userService := service.NewUserService(s.Config, userRepo)
+		recipeService := service.NewRecipeService(s.Config)
 
 		// Initialize controllers
 		userController := controller.NewUserController(userService)
 		userController.AddUnprotectedRoutes(echoRouter)
-		// userController.AddRoutes(api)
+
+		recipeController := controller.NewRecipeController(recipeService)
+		recipeController.AddRoutes(api)
 
 		log.Info().
 			Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", s.Config.GetPort(), s.Config.GetEnvironment()))
@@ -77,15 +73,8 @@ func (s *Server) Start() {
 }
 
 func (s *Server) setUpAPI(e *echo.Echo) *echo.Group {
-	config := echojwt.Config{
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(domain.JWTCustomClaims)
-		},
-		SigningKey: []byte(s.Config.GetJWTSecret()),
-	}
-
 	api := e.Group("/api")
-	api.Use(echojwt.WithConfig(config))
+	api.Use(middleware.JWTMiddleware(s.GetJWTSecret()))
 
 	return api
 }

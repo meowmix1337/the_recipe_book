@@ -2,9 +2,6 @@ package domain
 
 import (
 	"errors"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -14,18 +11,6 @@ var (
 	ErrJWTGeneration         = errors.New("error generating jwt token")
 	ErrUnauthorized          = errors.Join(ErrInvalidCredentials, ErrNoCredentialsProvided, ErrUserNotFound)
 )
-
-const (
-	JWTExpiration = time.Hour * 72
-)
-
-type JWTCustomClaims struct {
-	UserID uint   `json:"user_id"`
-	Email  string `json:"email"`
-	UUID   string `json:"uuid"`
-	Admin  bool   `json:"admin"`
-	jwt.RegisteredClaims
-}
 
 type UserSignup struct {
 	Email    string

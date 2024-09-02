@@ -10,7 +10,7 @@ import (
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -89,15 +89,18 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 		return "", err
 	}
 
-	//nolint:govet // viper
 	claims := &domain.JWTCustomClaims{
-		user.ID,
-		user.Email,
-		user.UUID,
-		false,
-		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.JWTExpiration)),
-		},
+		UserID:    user.ID,
+		FirstName: "Dave",
+		LastName:  "Van",
+		Email:     user.Email,
+		UUID:      user.UUID,
+		Admin:     false,
+	}
+	claims.RegisteredClaims = jwt.RegisteredClaims{
+		Issuer:    "Recipe App",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.JWTExpiration)),
 	}
 
 	// Generate JWT token
