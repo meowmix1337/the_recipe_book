@@ -30,6 +30,8 @@ func NewUserController(cfg config.Config, userService service.UserService) *User
 func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 	e.POST("/signup", uc.signup)
 	e.POST("/login", uc.login)
+
+	// logout needs the middleware since we need to retrieve the JWT claims.
 	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret()))
 }
 

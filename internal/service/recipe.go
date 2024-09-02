@@ -27,6 +27,5 @@ func NewRecipeService(cfg config.Config) *recipeService {
 var _ RecipeService = (*recipeService)(nil)
 
 func (u *recipeService) All() ([]*endpoint.Recipe, error) {
-
 	return []*endpoint.Recipe{}, nil
 }

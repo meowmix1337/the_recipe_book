@@ -29,10 +29,12 @@ func VerifyJWT(tokenString string, secretKey string) (*domain.JWTCustomClaims, e
 		return nil, errors.New("token has expired")
 	}
 
+	// check if the token is blacklisted
+
 	return claims, nil
 }
 
-// JWTMiddleware verifies the JWT token on each request
+// JWTMiddleware verifies the JWT token on each request.
 func JWTMiddleware(secretKey string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
