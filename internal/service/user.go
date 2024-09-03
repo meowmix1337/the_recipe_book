@@ -113,6 +113,8 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 		return "", domain.ErrJWTGeneration
 	}
 
+	// TODO: generate refresh token
+
 	return tokenString, nil
 }
 

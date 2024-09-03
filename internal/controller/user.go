@@ -33,6 +33,8 @@ func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 
 	// logout needs the middleware since we need to retrieve the JWT claims.
 	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret()))
+
+	// TODO: add refresh token route
 }
 
 func (uc *UserController) signup(c echo.Context) error {
@@ -90,6 +92,8 @@ func (uc *UserController) login(c echo.Context) error {
 		}
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
+
+	// TODO: add refresh token to the response
 
 	// return JWT token to be stored in client's local storage
 	return c.JSON(http.StatusOK, &endpoint.JWTResponse{

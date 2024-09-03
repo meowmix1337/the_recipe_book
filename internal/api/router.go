@@ -1,12 +1,18 @@
 package api
 
 import (
+	"time"
+
 	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	timeout = 30 * time.Second
 )
 
 func newRouter() *echo.Echo {
@@ -31,6 +37,12 @@ func newRouter() *echo.Echo {
 		},
 	}))
 	e.Use(middleware.Recover())
+	e.Use(middleware.RequestID())
+	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
+		Skipper:      middleware.DefaultSkipper,
+		ErrorMessage: "custom timeout error message returns to client",
+		Timeout:      timeout,
+	}))
 
 	e.Validator = &validation.CustomValidator{Validator: validator.New()}
 
