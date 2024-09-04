@@ -21,8 +21,6 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
-		log.Info().Interface("options", cfg).Msg("Server started")
-
 		server := api.NewServer(cfg)
 		server.Start()
 	},

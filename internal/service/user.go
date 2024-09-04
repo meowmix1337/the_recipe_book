@@ -26,14 +26,12 @@ type UserService interface {
 type userService struct {
 	*BaseService
 
-	users    map[uint]*domain.User
 	userRepo repo.UserRepo
 }
 
 func NewUserService(cfg config.Config, userRepo repo.UserRepo) *userService {
 	return &userService{
 		BaseService: &BaseService{Config: cfg},
-		users:       make(map[uint]*domain.User),
 		userRepo:    userRepo,
 	}
 }

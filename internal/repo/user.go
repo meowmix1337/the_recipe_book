@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 
+	"github.com/meowmix1337/go-core/db"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/model/entity"
 )
@@ -16,11 +17,13 @@ type UserRepo interface {
 
 type userRepo struct {
 	users map[uint]*entity.User
+	DB    db.DB
 }
 
-func NewUserRepository() *userRepo {
+func NewUserRepository(db db.DB) *userRepo {
 	return &userRepo{
 		users: make(map[uint]*entity.User),
+		DB:    db,
 	}
 }
 

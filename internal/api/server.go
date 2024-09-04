@@ -10,12 +10,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/meowmix1337/go-core/db"
 	"github.com/meowmix1337/the_recipe_book/internal/api/middleware"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/labstack/echo/v4"
 
 	"github.com/rs/zerolog/log"
@@ -42,8 +46,15 @@ func (s *Server) Start() {
 	go func() {
 		api := s.setUpAPI(echoRouter)
 
+		db, err := s.initializeDB()
+		if err != nil {
+			echoRouter.Logger.Fatal("failed to initilize DB, shutting down: %w", err)
+		}
+
+		// initilize Redis
+
 		// Initialize repositories
-		userRepo := repo.NewUserRepository()
+		userRepo := repo.NewUserRepository(db)
 
 		// Initialize services
 		userService := service.NewUserService(s.Config, userRepo)
@@ -58,7 +69,7 @@ func (s *Server) Start() {
 
 		log.Info().
 			Msg(fmt.Sprintf("Starting server on port: %v and environment: %v", s.Config.GetPort(), s.Config.GetEnvironment()))
-		if err := echoRouter.Start(fmt.Sprintf(":%v", s.Config.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err = echoRouter.Start(fmt.Sprintf(":%v", s.Config.GetPort())); err != nil && errors.Is(err, http.ErrServerClosed) {
 			// TODO do things before shutdown
 			echoRouter.Logger.Fatal("shutting down the server")
 		}
@@ -77,4 +88,49 @@ func (s *Server) setUpAPI(e *echo.Echo) *echo.Group {
 	api.Use(middleware.JWTMiddleware(s.GetJWTSecret()))
 
 	return api
+}
+
+func (s *Server) initializeDB() (db.DB, error) {
+	// TODO: add reader too
+	dbDSN := fmt.Sprintf("postgres://%v:%v@%v:%v/%v?sslmode=disable",
+		s.Config.GetDBUser(),
+		s.Config.GetDBPassword(),
+		s.Config.GetDBHost(),
+		s.Config.GetDBPort(),
+		s.Config.GetDBName(),
+	)
+	db := db.NewPostgres(dbDSN, dbDSN)
+
+	if err := s.runMigrations(dbDSN); err != nil {
+		return nil, fmt.Errorf("error running migration: %w", err)
+	}
+
+	log.Info().Msg("database initilized")
+
+	return db, nil
+}
+
+func (s *Server) runMigrations(writerDSN string) error {
+	log.Info().Msg("Running migrations")
+
+	// Create a new migrate instance
+	m, err := migrate.New(
+		"file://../migrations",
+		writerDSN,
+	)
+	if err != nil {
+		return fmt.Errorf("error creating migrate instance: %w", err)
+	}
+
+	// Run migrations
+	err = m.Up()
+	if err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			log.Info().Msg("no migrations to run, no changes detected")
+			return nil
+		}
+		return fmt.Errorf("error running migration: %w", err)
+	}
+
+	return nil
 }
