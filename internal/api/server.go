@@ -115,11 +115,19 @@ func (s *Server) runMigrations(writerDSN string) error {
 
 	// Create a new migrate instance
 	m, err := migrate.New(
-		"file://../migrations",
+		fmt.Sprintf("file://%s", s.Config.GetMigrationPath()),
 		writerDSN,
 	)
 	if err != nil {
-		return fmt.Errorf("error creating migrate instance: %w", err)
+		// debug mode, try ../migration
+		m, err = migrate.New(
+			"file://../migrations",
+			writerDSN,
+		)
+		if err != nil {
+			return fmt.Errorf("error creating migrate instance: %w", err)
+		}
+		log.Info().Msg("Running in debug mode, using ../migration path")
 	}
 
 	// Run migrations

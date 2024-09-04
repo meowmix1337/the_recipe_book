@@ -11,6 +11,7 @@ type Config interface {
 	GetEnvironment() string
 	GetJWTSecret() string
 	GetPort() string
+	GetMigrationPath() string
 
 	GetDBUser() string
 	GetDBPassword() string
@@ -21,16 +22,19 @@ type Config interface {
 
 // Config holds the application configuration.
 type ConfigImpl struct {
-	Environment string `mapstructure:"ENVIRONMENT"`
-	Hostname    string `mapstructure:"HOSTNAME"`
-	Port        string `mapstructure:"PORT"`
-	LogLevel    string `mapstructure:"LOG_LEVEL"`
-	JWTSecret   string `mapstructure:"JWT_SECRET"`
-	DBUser      string `mapstructure:"DB_USER"`
-	DBPassword  string `mapstructure:"DB_PASSWORD"`
-	DBHost      string `mapstructure:"DB_HOST"`
-	DBPort      string `mapstructure:"DB_POST"`
-	DBName      string `mapstructure:"DB_NAME"`
+	Environment   string `mapstructure:"ENVIRONMENT"`
+	Hostname      string `mapstructure:"HOSTNAME"`
+	Port          string `mapstructure:"PORT"`
+	LogLevel      string `mapstructure:"LOG_LEVEL"`
+	JWTSecret     string `mapstructure:"JWT_SECRET"`
+	MigrationPath string `mapstructure:"MIGRATION_PATH"`
+
+	// Database
+	DBUser     string `mapstructure:"DB_USER"`
+	DBPassword string `mapstructure:"DB_PASSWORD"`
+	DBHost     string `mapstructure:"DB_HOST"`
+	DBPort     string `mapstructure:"DB_POST"`
+	DBName     string `mapstructure:"DB_NAME"`
 }
 
 var _ Config = (*ConfigImpl)(nil)
@@ -38,7 +42,7 @@ var _ Config = (*ConfigImpl)(nil)
 // NewConfig initializes and returns a Config instance.
 func NewConfig() (*ConfigImpl, error) {
 	viper.SetConfigName(".env")
-	viper.AddConfigPath("../") // Specify the root directory for the config
+	viper.AddConfigPath(".")   // Specify the root directory for the config
 	viper.SetConfigType("env") // Use .env files for environment configuration.
 
 	viper.AutomaticEnv()
@@ -48,6 +52,7 @@ func NewConfig() (*ConfigImpl, error) {
 	viper.SetDefault("HOSTNAME", "localhost")
 	viper.SetDefault("PORT", "8081")
 	viper.SetDefault("LOG_LEVEL", "debug")
+	viper.SetDefault("MIGRATION_PATH", "../migration")
 	// You should definitely replace with your own secret, this is for testing only
 	viper.SetDefault("JWT_SECRET", "some_really_bad_secret")
 
@@ -82,6 +87,10 @@ func (c *ConfigImpl) GetJWTSecret() string {
 
 func (c *ConfigImpl) GetPort() string {
 	return c.Port
+}
+
+func (c *ConfigImpl) GetMigrationPath() string {
+	return c.MigrationPath
 }
 
 func (c *ConfigImpl) GetDBUser() string {

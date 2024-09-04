@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,11 +17,11 @@ import (
 )
 
 type UserService interface {
-	SignUp(userSignup *domain.UserSignup) error
-	Login(userCredentials *domain.UserCredentials) (string, error)
-	Logout(userID uint) error
+	SignUp(ctx context.Context, userSignup *domain.UserSignup) error
+	Login(ctx context.Context, userCredentials *domain.UserCredentials) (string, error)
+	Logout(ctx context.Context, userID uint) error
 
-	ByEmail(email string) (*domain.User, error)
+	ByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 type userService struct {
@@ -39,13 +40,13 @@ func NewUserService(cfg config.Config, userRepo repo.UserRepo) *userService {
 // check UserService interface implementation on compile time.
 var _ UserService = (*userService)(nil)
 
-func (u *userService) SignUp(userSignup *domain.UserSignup) error {
+func (u *userService) SignUp(ctx context.Context, userSignup *domain.UserSignup) error {
 	if userSignup == nil {
 		return fmt.Errorf("no user sign up details provided")
 	}
 
 	// check if email exists already
-	if _, err := u.ByEmail(userSignup.Email); err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+	if _, err := u.ByEmail(ctx, userSignup.Email); err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return err
 	}
 
@@ -67,13 +68,13 @@ func (u *userService) SignUp(userSignup *domain.UserSignup) error {
 	return nil
 }
 
-func (u *userService) Login(userCredentials *domain.UserCredentials) (string, error) {
+func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCredentials) (string, error) {
 	if userCredentials == nil {
 		log.Err(domain.ErrNoCredentialsProvided).Msg("no credentials were provided")
 		return "", fmt.Errorf("no user login credentials provided: %w", domain.ErrNoCredentialsProvided)
 	}
 
-	user, err := u.ByEmail(userCredentials.Email)
+	user, err := u.ByEmail(ctx, userCredentials.Email)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +117,7 @@ func (u *userService) Login(userCredentials *domain.UserCredentials) (string, er
 	return tokenString, nil
 }
 
-func (u *userService) Logout(userID uint) error {
+func (u *userService) Logout(ctx context.Context, userID uint) error {
 	// TODO blacklist the token via redis
 
 	// TODO revoke refresh token
@@ -124,8 +125,8 @@ func (u *userService) Logout(userID uint) error {
 	return nil
 }
 
-func (u *userService) ByEmail(email string) (*domain.User, error) {
-	user, err := u.userRepo.ByEmail(email)
+func (u *userService) ByEmail(ctx context.Context, email string) (*domain.User, error) {
+	user, err := u.userRepo.ByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Err(domain.ErrUserNotFound).Msg("user not found")

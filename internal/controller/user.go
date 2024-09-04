@@ -62,7 +62,7 @@ func (uc *UserController) signup(c echo.Context) error {
 		})
 	}
 
-	err := uc.UserService.SignUp(req.ToDomain())
+	err := uc.UserService.SignUp(c.Request().Context(), req.ToDomain())
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
 	}
@@ -84,7 +84,7 @@ func (uc *UserController) login(c echo.Context) error {
 		})
 	}
 
-	token, err := uc.UserService.Login(req.ToDomain())
+	token, err := uc.UserService.Login(c.Request().Context(), req.ToDomain())
 	if err != nil {
 		// we want to mask the actual error to the user
 		if uc.isUnauthorizedErr(err) {
@@ -108,7 +108,7 @@ func (uc *UserController) logout(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
 	}
 
-	err := uc.UserService.Logout(claims.UserID)
+	err := uc.UserService.Logout(c.Request().Context(), claims.UserID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
