@@ -2,9 +2,6 @@ package repo
 
 import (
 	"context"
-	"crypto/rand"
-	"database/sql"
-	"encoding/binary"
 
 	"github.com/meowmix1337/go-core/db"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
@@ -12,7 +9,7 @@ import (
 )
 
 type UserRepo interface {
-	Create(email, password string) (*domain.User, error)
+	Create(ctx context.Context, uuid, email, password string) error
 	ByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
@@ -30,33 +27,37 @@ func NewUserRepository(db db.DB) *userRepo {
 
 var _ UserRepo = (*userRepo)(nil)
 
-func (u *userRepo) Create(email, password string) (*domain.User, error) {
-	magic := 8
-	buf := make([]byte, magic)
+func (u *userRepo) Create(ctx context.Context, uuid, email, password string) error {
 
-	//nolint:errcheck // just testing
-	rand.Read(buf) // Always succeeds, no need to check error
-	id := binary.LittleEndian.Uint64(buf)
+	err := u.DB.Transaction(ctx, func(ctx context.Context, tx db.Tx) error {
 
-	newUser := &entity.User{
-		ID:       uint(id),
-		Email:    email,
-		Password: password,
-	}
+		query := `INSERT INTO users (uuid, email) VALUES ($1, $2) RETURNING id`
+		var userID int
+		err := tx.Get(ctx, &userID, query, uuid, email)
+		if err != nil {
+			return err
+		}
 
-	u.users[uint(id)] = newUser
+		query = `INSERT INTO user_passwords (user_id, password) VALUES ($1, $2)`
+		_, err = tx.Exec(ctx, query, userID, password)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 
-	return newUser.ToDomain(), nil
+	return err
 }
 
 func (u *userRepo) ByEmail(ctx context.Context, email string) (*domain.User, error) {
-	for _, user := range u.users {
-		if user.Email != email {
-			continue
-		}
 
-		return user.ToDomain(), nil
+	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
+
+	var userEntity entity.User
+	err := u.DB.Get_RO(ctx, &userEntity, query, email)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, sql.ErrNoRows
+	return userEntity.ToDomain(), nil
 }

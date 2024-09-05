@@ -46,24 +46,29 @@ func (u *userService) SignUp(ctx context.Context, userSignup *domain.UserSignup)
 	}
 
 	// check if email exists already
-	if _, err := u.ByEmail(ctx, userSignup.Email); err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+	user, err := u.ByEmail(ctx, userSignup.Email)
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return err
+	}
+
+	if user != nil {
+		return domain.ErrUserAlreadyExists
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userSignup.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Err(err).Msg("error generating hash password")
 		return err
 	}
 
-	user, err := u.userRepo.Create(userSignup.Email, string(hashedPassword))
+	// generate uuid
+	uuid := u.GenerateUUIDHash("user")
+
+	err = u.userRepo.Create(ctx, uuid, userSignup.Email, string(hashedPassword))
 	if err != nil {
+		log.Err(err).Msg("error creating user")
 		return fmt.Errorf("error creating user: %w", err)
 	}
-
-	log.Debug().
-		Uint("user_id", user.ID).
-		Str("email", user.Email).
-		Msg("new user created")
 
 	return nil
 }
