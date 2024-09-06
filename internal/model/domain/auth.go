@@ -16,11 +16,9 @@ var (
 )
 
 type JWTCustomClaims struct {
-	UserID    uint   `json:"user_id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Email     string `json:"email"`
-	UUID      string `json:"uuid"`
-	Admin     bool   `json:"admin"`
+	UserID uint   `json:"user_id"`
+	Email  string `json:"email"`
+	UUID   string `json:"uuid"`
+	Admin  bool   `json:"admin"`
 	jwt.RegisteredClaims
 }

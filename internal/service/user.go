@@ -64,7 +64,7 @@ func (u *userService) SignUp(ctx context.Context, userSignup *domain.UserSignup)
 	// generate uuid
 	uuid := u.GenerateUUIDHash("user")
 
-	err = u.userRepo.Create(ctx, uuid, userSignup, string(hashedPassword))
+	err = u.userRepo.Create(ctx, uuid, userSignup.Email, string(hashedPassword))
 	if err != nil {
 		log.Err(err).Msg("error creating user")
 		return fmt.Errorf("error creating user: %w", err)
@@ -95,12 +95,10 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 	}
 
 	claims := &domain.JWTCustomClaims{
-		UserID:    user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		UUID:      user.UUID,
-		Admin:     false,
+		UserID: user.ID,
+		Email:  user.Email,
+		UUID:   user.UUID,
+		Admin:  false,
 	}
 	claims.RegisteredClaims = jwt.RegisteredClaims{
 		Issuer:    "Recipe App",
