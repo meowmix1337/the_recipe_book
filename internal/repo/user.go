@@ -9,8 +9,9 @@ import (
 )
 
 type UserRepo interface {
-	Create(ctx context.Context, uuid, email, password string) error
+	Create(ctx context.Context, uuid string, userSignup *domain.UserSignup, password string) error
 	ByEmail(ctx context.Context, email string) (*domain.User, error)
+	ByEmailWithPassword(ctx context.Context, email string) (*domain.User, error)
 }
 
 type userRepo struct {
@@ -27,13 +28,13 @@ func NewUserRepository(db db.DB) *userRepo {
 
 var _ UserRepo = (*userRepo)(nil)
 
-func (u *userRepo) Create(ctx context.Context, uuid, email, password string) error {
+func (u *userRepo) Create(ctx context.Context, uuid string, userSignup *domain.UserSignup, password string) error {
 
 	err := u.DB.Transaction(ctx, func(ctx context.Context, tx db.Tx) error {
 
-		query := `INSERT INTO users (uuid, email) VALUES ($1, $2) RETURNING id`
+		query := `INSERT INTO users (uuid, email, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING id`
 		var userID int
-		err := tx.Get(ctx, &userID, query, uuid, email)
+		err := tx.Get(ctx, &userID, query, uuid, userSignup.Email, userSignup.FirstName, userSignup.LastName)
 		if err != nil {
 			return err
 		}
@@ -54,6 +55,26 @@ func (u *userRepo) ByEmail(ctx context.Context, email string) (*domain.User, err
 	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
 
 	var userEntity entity.User
+	err := u.DB.Get_RO(ctx, &userEntity, query, email)
+	if err != nil {
+		return nil, err
+	}
+
+	return userEntity.ToDomain(), nil
+}
+
+func (u *userRepo) ByEmailWithPassword(ctx context.Context, email string) (*domain.User, error) {
+
+	query := `
+		SELECT users.id, users.uuid, users.email, users.first_name, users.last_name, users.created_at, users.deleted_at, user_passwords.password
+			FROM users
+		JOIN user_passwords
+			ON user_passwords.user_id = users.id
+		WHERE users.email = $1
+			AND users.deleted_at IS NULL
+	`
+
+	var userEntity entity.UserWithPassword
 	err := u.DB.Get_RO(ctx, &userEntity, query, email)
 	if err != nil {
 		return nil, err

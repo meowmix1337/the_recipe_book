@@ -15,8 +15,10 @@ var (
 )
 
 type UserSignup struct {
-	Email    string
-	Password string
+	Email     string
+	Password  string
+	FirstName string
+	LastName  string
 }
 
 type UserCredentials struct {
@@ -29,6 +31,8 @@ type User struct {
 	UUID      string
 	Email     string
 	Password  string
+	FirstName string
+	LastName  string
 	CreatedAt time.Time
 	DeletedAt time.Time
 }

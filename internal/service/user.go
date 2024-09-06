@@ -64,7 +64,7 @@ func (u *userService) SignUp(ctx context.Context, userSignup *domain.UserSignup)
 	// generate uuid
 	uuid := u.GenerateUUIDHash("user")
 
-	err = u.userRepo.Create(ctx, uuid, userSignup.Email, string(hashedPassword))
+	err = u.userRepo.Create(ctx, uuid, userSignup, string(hashedPassword))
 	if err != nil {
 		log.Err(err).Msg("error creating user")
 		return fmt.Errorf("error creating user: %w", err)
@@ -79,7 +79,7 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 		return "", fmt.Errorf("no user login credentials provided: %w", domain.ErrNoCredentialsProvided)
 	}
 
-	user, err := u.ByEmail(ctx, userCredentials.Email)
+	user, err := u.ByEmailWithPassword(ctx, userCredentials.Email)
 	if err != nil {
 		return "", err
 	}
@@ -96,8 +96,8 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 
 	claims := &domain.JWTCustomClaims{
 		UserID:    user.ID,
-		FirstName: "Dave",
-		LastName:  "Van",
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 		Email:     user.Email,
 		UUID:      user.UUID,
 		Admin:     false,
@@ -132,6 +132,19 @@ func (u *userService) Logout(ctx context.Context, userID uint) error {
 
 func (u *userService) ByEmail(ctx context.Context, email string) (*domain.User, error) {
 	user, err := u.userRepo.ByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Err(domain.ErrUserNotFound).Msg("user not found")
+			return nil, fmt.Errorf("user not found: %w", domain.ErrUserNotFound)
+		}
+		log.Err(err).Msg("error retreiving user by email")
+		return nil, err
+	}
+	return user, nil
+}
+
+func (u *userService) ByEmailWithPassword(ctx context.Context, email string) (*domain.User, error) {
+	user, err := u.userRepo.ByEmailWithPassword(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Err(domain.ErrUserNotFound).Msg("user not found")
