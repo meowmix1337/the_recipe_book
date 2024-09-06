@@ -64,7 +64,10 @@ func (uc *UserController) signup(c echo.Context) error {
 
 	err := uc.UserService.SignUp(c.Request().Context(), req.ToDomain())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
+		if errors.Is(err, domain.ErrUserAlreadyExists) {
+			return c.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
 
 	return c.JSON(http.StatusCreated, echo.Map{"message": "User created successfully"})
