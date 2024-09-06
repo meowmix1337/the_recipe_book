@@ -29,10 +29,9 @@ func NewUserRepository(db db.DB) *userRepo {
 var _ UserRepo = (*userRepo)(nil)
 
 func (u *userRepo) Create(ctx context.Context, uuid string, email string, password string) error {
-
 	err := u.DB.Transaction(ctx, func(ctx context.Context, tx db.Tx) error {
-
 		query := `INSERT INTO users (uuid, email) VALUES ($1, $2) RETURNING id`
+
 		var userID int
 		err := tx.Get(ctx, &userID, query, uuid, email)
 		if err != nil {
@@ -51,7 +50,6 @@ func (u *userRepo) Create(ctx context.Context, uuid string, email string, passwo
 }
 
 func (u *userRepo) ByEmail(ctx context.Context, email string) (*domain.User, error) {
-
 	query := `SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL`
 
 	var userEntity entity.User
@@ -64,7 +62,6 @@ func (u *userRepo) ByEmail(ctx context.Context, email string) (*domain.User, err
 }
 
 func (u *userRepo) ByEmailWithPassword(ctx context.Context, email string) (*domain.User, error) {
-
 	query := `
 		SELECT users.id, users.uuid, users.email, users.first_name, users.last_name, users.created_at, users.deleted_at, user_passwords.password
 			FROM users
