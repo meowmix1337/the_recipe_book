@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
 )
@@ -16,9 +15,9 @@ type recipeService struct {
 	recipes map[uint]*domain.Recipe
 }
 
-func NewRecipeService(cfg config.Config) *recipeService {
+func NewRecipeService(base *BaseService) *recipeService {
 	return &recipeService{
-		BaseService: &BaseService{Config: cfg},
+		BaseService: base,
 		recipes:     make(map[uint]*domain.Recipe),
 	}
 }

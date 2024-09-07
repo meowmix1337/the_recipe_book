@@ -18,6 +18,10 @@ type Config interface {
 	GetDBName() string
 	GetDBHost() string
 	GetDBPort() string
+
+	GetRedisHost() string
+	GetRedisPort() string
+	GetRedisPassword() string
 }
 
 // Config holds the application configuration.
@@ -35,6 +39,10 @@ type ConfigImpl struct {
 	DBHost     string `mapstructure:"DB_HOST"`
 	DBPort     string `mapstructure:"DB_POST"`
 	DBName     string `mapstructure:"DB_NAME"`
+
+	RedisHost     string `mapstructure:"REDIS_HOST"`
+	RedisPort     string `mapstructure:"REDIS_PORT"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
 }
 
 var _ Config = (*ConfigImpl)(nil)
@@ -62,6 +70,11 @@ func NewConfig() (*ConfigImpl, error) {
 	viper.SetDefault("DB_NAME", "the_recipe_book")
 	viper.SetDefault("DB_HOST", "localhost")
 	viper.SetDefault("DB_PORT", "5432")
+
+	// Redis
+	viper.SetDefault("REDIS_HOST", "localhost")
+	viper.SetDefault("REDIS_PORT", "6379")
+	viper.SetDefault("REDIS_PASSWORD", "")
 
 	err := viper.ReadInConfig() // Read from config file.
 	if err != nil {
@@ -111,4 +124,16 @@ func (c *ConfigImpl) GetDBHost() string {
 
 func (c *ConfigImpl) GetDBPort() string {
 	return c.DBPort
+}
+
+func (c *ConfigImpl) GetRedisHost() string {
+	return c.RedisHost
+}
+
+func (c *ConfigImpl) GetRedisPort() string {
+	return c.RedisPort
+}
+
+func (c *ConfigImpl) GetRedisPassword() string {
+	return c.RedisPassword
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 
@@ -30,9 +29,9 @@ type userService struct {
 	userRepo repo.UserRepo
 }
 
-func NewUserService(cfg config.Config, userRepo repo.UserRepo) *userService {
+func NewUserService(base *BaseService, userRepo repo.UserRepo) *userService {
 	return &userService{
-		BaseService: &BaseService{Config: cfg},
+		BaseService: base,
 		userRepo:    userRepo,
 	}
 }
