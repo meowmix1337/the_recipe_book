@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/meowmix1337/go-core/cache"
 	"github.com/meowmix1337/go-core/db"
 	"github.com/meowmix1337/the_recipe_book/internal/api/middleware"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
@@ -51,14 +52,18 @@ func (s *Server) Start() {
 			echoRouter.Logger.Fatal("failed to initilize DB, shutting down: %w", err)
 		}
 
-		// initilize Redis
+		cache, err := s.initializeRedis()
+		if err != nil {
+			echoRouter.Logger.Fatal("failed to initilize Redis, shutting down: %w", err)
+		}
 
 		// Initialize repositories
 		userRepo := repo.NewUserRepository(db)
 
 		// Initialize services
-		userService := service.NewUserService(s.Config, userRepo)
-		recipeService := service.NewRecipeService(s.Config)
+		baseService := service.NewBaseService(s.Config, cache)
+		userService := service.NewUserService(baseService, userRepo)
+		recipeService := service.NewRecipeService(baseService)
 
 		// Initialize controllers
 		userController := controller.NewUserController(s.Config, userService)
@@ -141,4 +146,14 @@ func (s *Server) runMigrations(writerDSN string) error {
 	}
 
 	return nil
+}
+
+func (s *Server) initializeRedis() (cache.Cache, error) {
+	addr := fmt.Sprintf("%v:%v", s.Config.GetRedisHost(), s.Config.GetRedisPort())
+	cache, err := cache.NewRedisCache(addr, s.Config.GetRedisPassword(), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	return cache, nil
 }
