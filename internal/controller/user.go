@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/meowmix1337/the_recipe_book/internal/api/middleware"
-	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/controller/validation"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
@@ -20,9 +19,9 @@ type UserController struct {
 	UserService service.UserService
 }
 
-func NewUserController(cfg config.Config, userService service.UserService) *UserController {
+func NewUserController(base *BaseController, userService service.UserService) *UserController {
 	return &UserController{
-		BaseController: &BaseController{Config: cfg},
+		BaseController: base,
 		UserService:    userService,
 	}
 }
@@ -32,7 +31,7 @@ func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 	e.POST("/login", uc.login)
 
 	// logout needs the middleware since we need to retrieve the JWT claims.
-	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret()))
+	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
 
 	// TODO: add refresh token route
 }
@@ -111,7 +110,13 @@ func (uc *UserController) logout(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
 	}
 
-	err := uc.UserService.Logout(c.Request().Context(), claims.UserID)
+	token, ok := c.Get("jwt_token").(string)
+	if !ok {
+		log.Error().Msg("Failed to assert token")
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToRetrieveToken.Error()})
+	}
+
+	err := uc.UserService.Logout(c.Request().Context(), token, claims)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
