@@ -18,7 +18,7 @@ import (
 type UserService interface {
 	SignUp(ctx context.Context, userSignup *domain.UserSignup) error
 	Login(ctx context.Context, userCredentials *domain.UserCredentials) (string, error)
-	Logout(ctx context.Context, userID uint) error
+	Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error
 
 	ByEmail(ctx context.Context, email string) (*domain.User, error)
 }
@@ -119,8 +119,17 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 	return tokenString, nil
 }
 
-func (u *userService) Logout(ctx context.Context, userID uint) error {
+func (u *userService) Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error {
 	// TODO blacklist the token via redis
+	key := fmt.Sprintf("%v_%v", claims.UserID, token)
+	expirationTime := time.Unix(claims.ExpiresAt.Unix(), 0)
+	ttl := time.Until(expirationTime)
+
+	err := u.Cache.Set(ctx, key, "", int(ttl))
+	if err != nil {
+		log.Err(err).Msg("error blacklisting token")
+		return err
+	}
 
 	// TODO revoke refresh token
 

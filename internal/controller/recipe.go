@@ -3,7 +3,6 @@ package controller
 import (
 	"net/http"
 
-	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
 	"github.com/rs/zerolog/log"
@@ -16,9 +15,9 @@ type RecipeController struct {
 	RecipeService service.RecipeService
 }
 
-func NewRecipeController(cfg config.Config, recipeService service.RecipeService) *RecipeController {
+func NewRecipeController(base *BaseController, recipeService service.RecipeService) *RecipeController {
 	return &RecipeController{
-		BaseController: &BaseController{Config: cfg},
+		BaseController: base,
 		RecipeService:  recipeService,
 	}
 }

@@ -45,8 +45,6 @@ func (s *Server) Start() {
 	defer stop()
 	// Start server
 	go func() {
-		api := s.setUpAPI(echoRouter)
-
 		db, err := s.initializeDB()
 		if err != nil {
 			echoRouter.Logger.Fatal("failed to initilize DB, shutting down: %w", err)
@@ -57,6 +55,8 @@ func (s *Server) Start() {
 			echoRouter.Logger.Fatal("failed to initilize Redis, shutting down: %w", err)
 		}
 
+		api := s.setUpAPI(echoRouter, cache)
+
 		// Initialize repositories
 		userRepo := repo.NewUserRepository(db)
 
@@ -66,10 +66,11 @@ func (s *Server) Start() {
 		recipeService := service.NewRecipeService(baseService)
 
 		// Initialize controllers
-		userController := controller.NewUserController(s.Config, userService)
+		baseController := controller.NewBaseController(s.Config, cache)
+		userController := controller.NewUserController(baseController, userService)
 		userController.AddUnprotectedRoutes(echoRouter)
 
-		recipeController := controller.NewRecipeController(s.Config, recipeService)
+		recipeController := controller.NewRecipeController(baseController, recipeService)
 		recipeController.AddRoutes(api)
 
 		log.Info().
@@ -88,9 +89,9 @@ func (s *Server) Start() {
 	}
 }
 
-func (s *Server) setUpAPI(e *echo.Echo) *echo.Group {
+func (s *Server) setUpAPI(e *echo.Echo, cache cache.Cache) *echo.Group {
 	api := e.Group("/api")
-	api.Use(middleware.JWTMiddleware(s.GetJWTSecret()))
+	api.Use(middleware.JWTMiddleware(s.GetJWTSecret(), cache))
 
 	return api
 }

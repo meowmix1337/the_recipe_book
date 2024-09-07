@@ -12,7 +12,8 @@ const (
 )
 
 var (
-	ErrUnableToVerifyClaim = errors.New("unable to verify claims")
+	ErrUnableToVerifyClaim   = errors.New("unable to verify claims")
+	ErrUnableToRetrieveToken = errors.New("unable to retrieve token")
 )
 
 type JWTCustomClaims struct {
