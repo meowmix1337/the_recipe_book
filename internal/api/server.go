@@ -92,6 +92,8 @@ func (s *Server) Start() {
 func (s *Server) setUpAPI(e *echo.Echo, cache cache.Cache) *echo.Group {
 	api := e.Group("/api")
 	api.Use(middleware.JWTMiddleware(s.GetJWTSecret(), cache))
+	// this must be set after JWTMiddleware.
+	api.Use(middleware.UserIDLoggerMiddleware)
 
 	return api
 }
