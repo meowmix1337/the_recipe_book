@@ -62,7 +62,8 @@ func (s *Server) Start() {
 
 		// Initialize services
 		baseService := service.NewBaseService(s.Config, cache)
-		userService := service.NewUserService(baseService, userRepo)
+		authService := service.NewAuthService(s.Config)
+		userService := service.NewUserService(baseService, authService, userRepo)
 		recipeService := service.NewRecipeService(baseService)
 
 		// Initialize controllers

@@ -10,7 +10,6 @@ import (
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,12 +25,15 @@ type UserService interface {
 type userService struct {
 	*BaseService
 
+	authService AuthService
+
 	userRepo repo.UserRepo
 }
 
-func NewUserService(base *BaseService, userRepo repo.UserRepo) *userService {
+func NewUserService(base *BaseService, authService AuthService, userRepo repo.UserRepo) *userService {
 	return &userService{
 		BaseService: base,
+		authService: authService,
 		userRepo:    userRepo,
 	}
 }
@@ -93,30 +95,14 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 		return "", err
 	}
 
-	claims := &domain.JWTCustomClaims{
-		UserID: user.ID,
-		Email:  user.Email,
-		UUID:   user.UUID,
-		Admin:  false,
-	}
-	claims.RegisteredClaims = jwt.RegisteredClaims{
-		Issuer:    "Recipe App",
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(domain.JWTExpiration)),
-	}
-
-	// Generate JWT token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString([]byte(u.Config.GetJWTSecret()))
+	token, err := u.authService.GenerateToken(user)
 	if err != nil {
-		log.Err(err).Msg("error generating JWT token")
-		return "", domain.ErrJWTGeneration
+		return "", err
 	}
 
 	// TODO: generate refresh token
 
-	return tokenString, nil
+	return token, nil
 }
 
 func (u *userService) Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error {
