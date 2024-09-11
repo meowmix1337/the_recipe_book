@@ -10,3 +10,5 @@ Exec into postgres DB:
 
 1. `brew install golang-migrate`
 2. `migrate create -ext sql -dir migrations -seq ${migration_name}`
+3. `migrate -database ${POSTGRESQL_URL} -path migrations down`
+4. `migrate -database ${POSTGRESQL_URL} -path migrations up`
