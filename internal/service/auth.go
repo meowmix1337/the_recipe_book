@@ -1,32 +1,41 @@
 package service
 
 import (
+	"context"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
+	"github.com/meowmix1337/the_recipe_book/internal/repo"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
 type AuthService interface {
-	GenerateToken(user *domain.User) (string, error)
+	GenerateToken(ctx context.Context, user *domain.User) (string, error)
+	GenerateRefreshToken(ctx context.Context, userID uint) (string, error)
+	DeleteRefreshToken(ctx context.Context, userID uint) error
 }
 
 type authService struct {
 	config.Config
+
+	refreshTokenRepo repo.RefreshTokenRepo
 }
 
-func NewAuthService(cfg config.Config) *authService {
+func NewAuthService(cfg config.Config, refreshTokenRepo repo.RefreshTokenRepo) *authService {
 	return &authService{
-		Config: cfg,
+		Config:           cfg,
+		refreshTokenRepo: refreshTokenRepo,
 	}
 }
 
 // check UserService interface implementation on compile time.
 var _ AuthService = (*authService)(nil)
 
-func (s *authService) GenerateToken(user *domain.User) (string, error) {
+func (s *authService) GenerateToken(ctx context.Context, user *domain.User) (string, error) {
 	claims := &domain.JWTCustomClaims{
 		UserID: user.ID,
 		Email:  user.Email,
@@ -50,4 +59,19 @@ func (s *authService) GenerateToken(user *domain.User) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (s *authService) GenerateRefreshToken(ctx context.Context, userID uint) (string, error) {
+	uuid := uuid.NewString()
+
+	err := s.refreshTokenRepo.CreateRefreshToken(ctx, uuid, userID)
+	if err != nil {
+		return "", err
+	}
+
+	return uuid, nil
+}
+
+func (s *authService) DeleteRefreshToken(ctx context.Context, userID uint) error {
+	return s.refreshTokenRepo.DeleteRefreshToken(ctx, userID)
 }

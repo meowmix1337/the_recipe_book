@@ -98,9 +98,7 @@ func (uc *UserController) login(c echo.Context) error {
 	// TODO: add refresh token to the response
 
 	// return JWT token to be stored in client's local storage
-	return c.JSON(http.StatusOK, &endpoint.JWTResponse{
-		Token: token,
-	})
+	return c.JSON(http.StatusOK, token)
 }
 
 func (uc *UserController) logout(c echo.Context) error {

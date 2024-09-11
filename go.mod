@@ -3,10 +3,12 @@ module github.com/meowmix1337/the_recipe_book
 go 1.23.0
 
 require (
+	github.com/docker/distribution v2.8.2+incompatible
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/golangci/golangci-lint v1.60.3
+	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/meowmix1337/go-core v0.10.0-alpha
 	github.com/rs/zerolog v1.33.0

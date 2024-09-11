@@ -21,7 +21,6 @@ CREATE TABLE user_passwords (
   UNIQUE (user_id)
 );
 
--- Create the refresh_tokens table
 CREATE TABLE refresh_tokens (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -30,8 +29,15 @@ CREATE TABLE refresh_tokens (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMP WITH TIME ZONE,
-  UNIQUE (user_id, token)
+  
+  -- Ensure the token is unique for each user with only one active token (deleted_at is NULL)
+  CONSTRAINT unique_active_token_per_user UNIQUE (user_id, token)
 );
+
+-- Add partial index to ensure only one active token exists per user (deleted_at is NULL)
+CREATE UNIQUE INDEX idx_unique_active_refresh_token 
+ON refresh_tokens (user_id) 
+WHERE deleted_at IS NULL;
 
 -- Create indexes
 CREATE INDEX idx_users_email ON users (email);
