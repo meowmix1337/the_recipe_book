@@ -59,10 +59,11 @@ func (s *Server) Start() {
 
 		// Initialize repositories
 		userRepo := repo.NewUserRepository(db)
+		refreshTokenRepo := repo.NewRefreshTokenRepo(db)
 
 		// Initialize services
 		baseService := service.NewBaseService(s.Config, cache)
-		authService := service.NewAuthService(s.Config)
+		authService := service.NewAuthService(s.Config, refreshTokenRepo)
 		userService := service.NewUserService(baseService, authService, userRepo)
 		recipeService := service.NewRecipeService(baseService)
 

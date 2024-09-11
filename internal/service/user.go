@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
+	"github.com/meowmix1337/the_recipe_book/internal/model/endpoint"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 
 	"github.com/rs/zerolog/log"
@@ -16,7 +17,7 @@ import (
 
 type UserService interface {
 	SignUp(ctx context.Context, userSignup *domain.UserSignup) error
-	Login(ctx context.Context, userCredentials *domain.UserCredentials) (string, error)
+	Login(ctx context.Context, userCredentials *domain.UserCredentials) (*endpoint.JWTResponse, error)
 	Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error
 
 	ByEmail(ctx context.Context, email string) (*domain.User, error)
@@ -74,39 +75,44 @@ func (u *userService) SignUp(ctx context.Context, userSignup *domain.UserSignup)
 	return nil
 }
 
-func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCredentials) (string, error) {
+func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCredentials) (*endpoint.JWTResponse, error) {
 	if userCredentials == nil {
 		log.Err(domain.ErrNoCredentialsProvided).Msg("no credentials were provided")
-		return "", fmt.Errorf("no user login credentials provided: %w", domain.ErrNoCredentialsProvided)
+		return nil, fmt.Errorf("no user login credentials provided: %w", domain.ErrNoCredentialsProvided)
 	}
 
 	user, err := u.ByEmailWithPassword(ctx, userCredentials.Email)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Compare the stored hash with the provided password
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userCredentials.Password)); err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			log.Err(domain.ErrInvalidCredentials).Msg("invalid credentials")
-			return "", fmt.Errorf("invalid credentials: %w", domain.ErrInvalidCredentials)
+			return nil, fmt.Errorf("invalid credentials: %w", domain.ErrInvalidCredentials)
 		}
 		log.Err(err).Msg("error comparing password")
-		return "", err
+		return nil, err
 	}
 
-	token, err := u.authService.GenerateToken(user)
+	token, err := u.authService.GenerateToken(ctx, user)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// TODO: generate refresh token
+	refreshToken, err := u.authService.GenerateRefreshToken(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
 
-	return token, nil
+	return &endpoint.JWTResponse{
+		Token:        token,
+		RefreshToken: refreshToken,
+	}, nil
 }
 
 func (u *userService) Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error {
-	// TODO blacklist the token via redis
 	key := fmt.Sprintf("%v_%v", claims.UserID, token)
 	expirationTime := time.Unix(claims.ExpiresAt.Unix(), 0)
 	ttl := time.Until(expirationTime)
@@ -117,9 +123,7 @@ func (u *userService) Logout(ctx context.Context, token string, claims *domain.J
 		return err
 	}
 
-	// TODO revoke refresh token
-
-	return nil
+	return u.authService.DeleteRefreshToken(ctx, claims.UserID)
 }
 
 func (u *userService) ByEmail(ctx context.Context, email string) (*domain.User, error) {
