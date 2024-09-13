@@ -30,3 +30,7 @@ func (u *UserCredentialsRequest) ToDomain() *domain.UserCredentials {
 		Password: u.Password,
 	}
 }
+
+type UserRefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" validate:"required"`
+}

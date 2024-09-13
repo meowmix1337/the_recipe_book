@@ -14,6 +14,7 @@ const (
 var (
 	ErrUnableToVerifyClaim   = errors.New("unable to verify claims")
 	ErrUnableToRetrieveToken = errors.New("unable to retrieve token")
+	ErrRefreshTokenNotFound  = errors.New("refresh token does not exist")
 )
 
 type JWTCustomClaims struct {
@@ -22,4 +23,14 @@ type JWTCustomClaims struct {
 	UUID   string `json:"uuid"`
 	Admin  bool   `json:"admin"`
 	jwt.RegisteredClaims
+}
+
+type RefreshToken struct {
+	ID        uint
+	UserID    uint
+	Token     string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt time.Time
 }

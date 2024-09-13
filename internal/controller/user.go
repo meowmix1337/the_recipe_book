@@ -32,7 +32,7 @@ func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 
 	// logout needs the middleware since we need to retrieve the JWT claims.
 	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
-	e.POST("/refresh", uc.refresh, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
+	e.POST("/refresh-token", uc.refreshToken, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
 
 	// TODO: add refresh token route
 }
@@ -96,8 +96,6 @@ func (uc *UserController) login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
 	}
 
-	// TODO: add refresh token to the response
-
 	// return JWT token to be stored in client's local storage
 	return c.JSON(http.StatusOK, token)
 }
@@ -106,7 +104,7 @@ func (uc *UserController) logout(c echo.Context) error {
 	claims, ok := c.Get("claims").(*domain.JWTCustomClaims)
 	if !ok {
 		log.Error().Msg("Failed to assert claims")
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
+		return c.JSON(http.StatusUnauthorized, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
 	}
 
 	token, ok := c.Get("jwt_token").(string)
@@ -123,6 +121,42 @@ func (uc *UserController) logout(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{
 		"message": "Successfully logged out",
 	})
+}
+
+func (uc *UserController) refreshToken(c echo.Context) error {
+	claims, ok := c.Get("claims").(*domain.JWTCustomClaims)
+	if !ok {
+		log.Error().Msg("Failed to assert claims")
+		return c.JSON(http.StatusUnauthorized, echo.Map{"message": domain.ErrUnableToVerifyClaim.Error()})
+	}
+
+	jwtToken, ok := c.Get("jwt_token").(string)
+	if !ok {
+		log.Error().Msg("Failed to assert token")
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToRetrieveToken.Error()})
+	}
+
+	// get refresh token from request
+	var req endpoint.UserRefreshTokenRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"message": "Invalid input"})
+	}
+
+	user := &domain.User{
+		ID:    claims.UserID,
+		Email: claims.Email,
+		UUID:  claims.UUID,
+	}
+	token, err := uc.UserService.RefreshToken(c.Request().Context(), jwtToken, user, req.RefreshToken, claims.ExpiresAt.Time)
+	if err != nil {
+		if errors.Is(err, domain.ErrUnauthorized) {
+			return c.JSON(http.StatusUnauthorized, echo.Map{"message": "Unauthorized"})
+		}
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "Internal Server Error"})
+	}
+
+	// return JWT token to be stored in client's local storage
+	return c.JSON(http.StatusOK, token)
 }
 
 func (uc *UserController) isUnauthorizedErr(err error) bool {

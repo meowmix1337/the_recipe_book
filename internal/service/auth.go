@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/meowmix1337/the_recipe_book/internal/config"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/repo"
 
@@ -17,17 +17,20 @@ type AuthService interface {
 	GenerateToken(ctx context.Context, user *domain.User) (string, error)
 	GenerateRefreshToken(ctx context.Context, userID uint) (string, error)
 	DeleteRefreshToken(ctx context.Context, userID uint) error
+	BlacklistToken(ctx context.Context, token string, userID uint, expiresAt time.Time) error
+
+	ByRefreshToken(ctx context.Context, userID uint, refreshToken string) (*domain.RefreshToken, error)
 }
 
 type authService struct {
-	config.Config
+	*BaseService
 
 	refreshTokenRepo repo.RefreshTokenRepo
 }
 
-func NewAuthService(cfg config.Config, refreshTokenRepo repo.RefreshTokenRepo) *authService {
+func NewAuthService(base *BaseService, refreshTokenRepo repo.RefreshTokenRepo) *authService {
 	return &authService{
-		Config:           cfg,
+		BaseService:      base,
 		refreshTokenRepo: refreshTokenRepo,
 	}
 }
@@ -74,4 +77,22 @@ func (s *authService) GenerateRefreshToken(ctx context.Context, userID uint) (st
 
 func (s *authService) DeleteRefreshToken(ctx context.Context, userID uint) error {
 	return s.refreshTokenRepo.DeleteRefreshToken(ctx, userID)
+}
+
+func (s *authService) ByRefreshToken(ctx context.Context, userID uint, refreshToken string) (*domain.RefreshToken, error) {
+	return s.refreshTokenRepo.ByRefreshToken(ctx, userID, refreshToken)
+}
+
+func (s *authService) BlacklistToken(ctx context.Context, token string, userID uint, expiresAt time.Time) error {
+	key := fmt.Sprintf("%v_%v", userID, token)
+	expirationTime := time.Unix(expiresAt.Unix(), 0)
+	ttl := time.Until(expirationTime)
+
+	err := s.Cache.Set(ctx, key, "", int(ttl))
+	if err != nil {
+		log.Err(err).Msg("error blacklisting token")
+		return err
+	}
+
+	return nil
 }

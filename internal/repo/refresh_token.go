@@ -2,14 +2,20 @@ package repo
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/meowmix1337/go-core/db"
+	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
+	"github.com/meowmix1337/the_recipe_book/internal/model/entity"
 )
 
 type RefreshTokenRepo interface {
 	CreateRefreshToken(ctx context.Context, refreshToken string, userID uint) error
 	DeleteRefreshToken(ctx context.Context, userID uint) error
+
+	ByRefreshToken(ctx context.Context, userID uint, refreshToken string) (*domain.RefreshToken, error)
 }
 
 type refreshTokenRepo struct {
@@ -56,4 +62,24 @@ func (r *refreshTokenRepo) DeleteRefreshToken(ctx context.Context, userID uint) 
 	}
 
 	return err
+}
+
+func (r *refreshTokenRepo) ByRefreshToken(ctx context.Context, userID uint, refreshToken string) (*domain.RefreshToken, error) {
+	query := `
+	SELECT * 
+		FROM refresh_tokens 
+	WHERE refresh_tokens.token = $1 
+		AND refresh_tokens.user_id = $2 
+		AND refresh_tokens.deleted_at IS NULL`
+
+	var refreshTokenEntity entity.RefreshToken
+	err := r.DB.Get(ctx, &refreshTokenEntity, query, refreshToken, userID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrRefreshTokenNotFound
+		}
+		return nil, err
+	}
+
+	return refreshTokenEntity.ToDomain(), nil
 }

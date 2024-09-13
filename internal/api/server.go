@@ -63,7 +63,7 @@ func (s *Server) Start() {
 
 		// Initialize services
 		baseService := service.NewBaseService(s.Config, cache)
-		authService := service.NewAuthService(s.Config, refreshTokenRepo)
+		authService := service.NewAuthService(baseService, refreshTokenRepo)
 		userService := service.NewUserService(baseService, authService, userRepo)
 		recipeService := service.NewRecipeService(baseService)
 
