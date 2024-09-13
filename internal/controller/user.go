@@ -32,6 +32,7 @@ func (uc *UserController) AddUnprotectedRoutes(e *echo.Echo) {
 
 	// logout needs the middleware since we need to retrieve the JWT claims.
 	e.POST("/logout", uc.logout, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
+	e.POST("/refresh", uc.refresh, middleware.JWTMiddleware(uc.Config.GetJWTSecret(), uc.Cache))
 
 	// TODO: add refresh token route
 }
