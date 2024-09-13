@@ -19,8 +19,10 @@ type UserService interface {
 	SignUp(ctx context.Context, userSignup *domain.UserSignup) error
 	Login(ctx context.Context, userCredentials *domain.UserCredentials) (*endpoint.JWTResponse, error)
 	Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error
+	RefreshToken(ctx context.Context, jwtToken string, user *domain.User, refreshToken string, expiresAt time.Time) (*endpoint.JWTResponse, error)
 
 	ByEmail(ctx context.Context, email string) (*domain.User, error)
+	ByEmailWithPassword(ctx context.Context, email string) (*domain.User, error)
 }
 
 type userService struct {
@@ -113,17 +115,53 @@ func (u *userService) Login(ctx context.Context, userCredentials *domain.UserCre
 }
 
 func (u *userService) Logout(ctx context.Context, token string, claims *domain.JWTCustomClaims) error {
-	key := fmt.Sprintf("%v_%v", claims.UserID, token)
-	expirationTime := time.Unix(claims.ExpiresAt.Unix(), 0)
-	ttl := time.Until(expirationTime)
-
-	err := u.Cache.Set(ctx, key, "", int(ttl))
+	err := u.authService.BlacklistToken(ctx, token, claims.UserID, claims.ExpiresAt.Time)
 	if err != nil {
-		log.Err(err).Msg("error blacklisting token")
 		return err
 	}
 
 	return u.authService.DeleteRefreshToken(ctx, claims.UserID)
+}
+
+func (u *userService) RefreshToken(ctx context.Context, jwtToken string, user *domain.User, refreshToken string, expiresAt time.Time) (*endpoint.JWTResponse, error) {
+	// make sure refresh token exists
+	rt, err := u.authService.ByRefreshToken(ctx, user.ID, refreshToken)
+	if err != nil {
+		log.Err(err).Msg("could not find refresh token")
+		return nil, err
+	}
+
+	// if the token has expired, delete it and return unauthorized
+	if rt.ExpiresAt.Before(time.Now()) {
+		err = u.authService.DeleteRefreshToken(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, domain.ErrUnauthorized
+	}
+
+	// refresh the token and generate a JWT token
+	newJwtToken, err := u.authService.GenerateToken(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	newRefreshToken, err := u.authService.GenerateRefreshToken(ctx, user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// blacklist jwtToken
+	err = u.authService.BlacklistToken(ctx, jwtToken, user.ID, expiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &endpoint.JWTResponse{
+		Token:        newJwtToken,
+		RefreshToken: newRefreshToken,
+	}, nil
 }
 
 func (u *userService) ByEmail(ctx context.Context, email string) (*domain.User, error) {
