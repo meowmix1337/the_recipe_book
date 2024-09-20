@@ -3,9 +3,7 @@ package controller
 import (
 	"net/http"
 
-	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
 	"github.com/meowmix1337/the_recipe_book/internal/service"
-	"github.com/rs/zerolog/log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -23,24 +21,28 @@ func NewRecipeController(base *BaseController, recipeService service.RecipeServi
 }
 
 func (rc *RecipeController) AddRoutes(e *echo.Group) {
-	e.GET("/"+V1+"/recipes", rc.all)
+	e.GET("/"+V1+"/recipes", rc.index)
 }
 
-func (rc *RecipeController) all(c echo.Context) error {
-	claims, ok := c.Get("claims").(*domain.JWTCustomClaims)
-	if !ok {
-		log.Error().Msg("Failed to assert claims")
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": domain.ErrUnableToVerifyClaim})
+func (rc *RecipeController) index(c echo.Context) error {
+	userID, err := rc.GetUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
+	}
+
+	filterParams, err := rc.RecipeService.ParseAllParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
 	// TODO hook up pagination
 
-	_, err := rc.RecipeService.All()
+	recipes, err := rc.RecipeService.All(c.Request().Context(), userID, filterParams)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"data": claims,
-	})
+	// potentially a pagination struct wrapper here to encapsulate the recipes
+
+	return c.JSON(http.StatusOK, recipes)
 }

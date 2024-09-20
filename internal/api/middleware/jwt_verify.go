@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/meowmix1337/go-core/cache"
 	"github.com/meowmix1337/the_recipe_book/internal/model/domain"
+	"github.com/rs/zerolog/log"
 )
 
 func VerifyJWT(ctx context.Context, cache cache.Cache, tokenString string, secretKey string) (*domain.JWTCustomClaims, error) {
@@ -19,7 +19,8 @@ func VerifyJWT(ctx context.Context, cache cache.Cache, tokenString string, secre
 		return []byte(secretKey), nil
 	})
 	if err != nil {
-		return nil, err
+		log.Err(err).Msg("error parsing claims")
+		return nil, echo.ErrUnauthorized
 	}
 
 	claims, ok := token.Claims.(*domain.JWTCustomClaims)
@@ -59,10 +60,7 @@ func JWTMiddleware(secretKey string, cache cache.Cache) echo.MiddlewareFunc {
 
 			claims, err := VerifyJWT(c.Request().Context(), cache, tokenString, secretKey)
 			if err != nil {
-				if errors.Is(err, echo.ErrUnauthorized) {
-					return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
-				}
-				return echo.NewHTTPError(http.StatusInternalServerError, "Internal Server Error")
+				return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
 			}
 
 			c.Set("claims", claims)
