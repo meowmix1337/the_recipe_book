@@ -51,7 +51,6 @@ func (s *recipeService) ParseAllParams(c echo.Context) (*domain.RecipeAllParams,
 	}
 
 	return params, nil
-
 }
 
 func (s *recipeService) All(ctx context.Context, userID uint, paginationParams *endpoint.PagniationParams, filterParams *domain.RecipeAllParams) ([]*endpoint.Recipe, error) {
