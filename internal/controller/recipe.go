@@ -30,14 +30,17 @@ func (rc *RecipeController) index(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
 
+	paginationParams, err := rc.GetPaginationParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
+	}
+
 	filterParams, err := rc.RecipeService.ParseAllParams(c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": err.Error()})
 	}
 
-	// TODO hook up pagination
-
-	recipes, err := rc.RecipeService.All(c.Request().Context(), userID, filterParams)
+	recipes, err := rc.RecipeService.All(c.Request().Context(), userID, paginationParams, filterParams)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}

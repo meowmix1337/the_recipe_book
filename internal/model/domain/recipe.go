@@ -16,9 +16,9 @@ const (
 )
 
 type RecipeAllParams struct {
-	Title  string
-	Rating int
-	Tags   []string
+	Title  string   `query:"title"`
+	Rating int      `query:"rating"`
+	Tags   []string `query:"tags"`
 }
 
 type Recipe struct {
